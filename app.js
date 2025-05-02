@@ -59,4 +59,54 @@ io.on("connection", (socket) => {
       });
     }
   });
+
+  //Update Operation:
+  socket.on("updateBook", async (data) => {
+    try {
+      if (data) {
+        const { bookName, bookPrice, authorName, publication, bookId } = data;
+        const updateBook = await Book.findByIdAndUpdate(
+          bookId,
+          {
+            bookName,
+            bookPrice,
+            authorName,
+            publication,
+          },
+          {
+            new: true,
+          }
+        );
+        socket.emit("response", {
+          status: 200,
+          message: "Book updated successfully.",
+          data: updateBook,
+        });
+      }
+    } catch (error) {
+      socket.emit("response", {
+        status: 500,
+        message: "Something went wrong!",
+      });
+    }
+  });
+
+  //Delete Operation:
+  socket.on("deleteBook", async (data) => {
+    try {
+      if (data) {
+        const { bookId } = data;
+        const x = await Book.findByIdAndDelete(bookId);
+        socket.emit("response", {
+          status: 200,
+          message: "Book deleted successfully",
+        });
+      }
+    } catch (error) {
+      socket.emit("response", {
+        status: 500,
+        message: "Something went wrong!",
+      });
+    }
+  });
 });

@@ -1,54 +1,62 @@
 const express = require("express");
-
 const app = express();
 const PORT = 4000;
 
-const { Server } = require("socket.io");
+//Database:
+const dbConfig = require("./database");
+dbConfig();
 
+const { Server } = require("socket.io");
+const Book = require("./model/bookModel");
 const server = app.listen(PORT, () => {
   console.log("Server has started at port:", PORT);
 });
 
 const io = new Server(server);
 
+//CRUD using Socket:
 io.on("connection", (socket) => {
-  // Give Postman time to start listening
-  //   setTimeout(() => {
-  //     socket.emit("hi", {
-  //       message: "Hello from server!",
-  //     });
-  //   }, 1000);
-  //   console.log(socket.id);
-  //   console.log("Someone has connected!!");
+  console.log("User Connected.");
 
-  //   socket.on("sendData", (data) => {
-  //     if (data) {
-  //       //To notify all clients:
-  //       //   io.emit("response", {
-  //       //     message: "Thank you, your data is received!",
-  //       //   });
-
-  //       //To notify only the sender:
-  //       io.to(socket.id).emit("response", {
-  //         message: "Thank you, your data is received!",
-  //       });
-
-  //       //To notify only the client who sent the data:
-  //       //   socket.emit("response", {
-  //       //     message: "Thank you, your data is received!",
-  //       //   });
-  //     }
-  //   });
-
-  //Task:
-  socket.on("message", (data) => {
-    console.log(data);
-    socket.emit("response", {
-      message: data,
-    });
+  //Create Operation:
+  socket.on("addBook", async (data) => {
+    try {
+      if (data) {
+        const { bookName, bookPrice, authorName, publication } = data;
+        const newBook = await Book.create({
+          bookName,
+          bookPrice,
+          authorName,
+          publication,
+        });
+        io.to(socket.id).emit("response", {
+          status: 200,
+          message: "Book Created Successfully.",
+          data: newBook,
+        });
+      }
+    } catch (error) {
+      socket.emit("response", {
+        status: 500,
+        message: "Something went wrong.",
+      });
+    }
   });
 
-  //   socket.on("disconnect", () => {
-  //     console.log("User is disconnected!!");
-  //   });
+  //Read Operation:
+  socket.on("getBooks", async (data) => {
+    try {
+      const books = await Book.find();
+      socket.emit("response", {
+        status: 200,
+        message: "Book fetched successfully.",
+        data: books,
+      });
+    } catch (error) {
+      socket.emit("response", {
+        status: 500,
+        message: "Something went wrong.",
+      });
+    }
+  });
 });
